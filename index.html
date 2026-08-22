@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>唐崎ジュニア 大会進行表</title>
+  <!-- Google Fonts & Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            karasaki: {
+              50: '#fefce8',
+              100: '#fef9c3',
+              200: '#fef08a',
+              400: '#facc15',
+              500: '#eab308',
+              600: '#ca8a04',
+              700: '#a16207',
+              bgLight: '#fef9c3',
+              borderLight: '#eab308',
+              bgDark: '#451a03',
+              borderDark: '#b45309',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* 長押し操作時の選択防止 */
+    .prevent-select {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    
+    /* カスタムスクロールバー */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* 長押しフィードバック用 */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.97); opacity: 0.8; }
+      50% { transform: scale(1.02); opacity: 1; }
+      100% { transform: scale(0.97); opacity: 0.8; }
+    }
+    .holding {
+      animation: pulse-ring 0.5s infinite ease-in-out;
+      outline: 2px solid #eab308 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen pb-20 font-sans antialiased prevent-select transition-colors duration-200">
+
+  <!-- ヘッダー -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md pt-safe">
+    <div class="px-3 py-2 flex items-center justify-between border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-yellow-400 text-slate-950 flex items-center justify-center font-black text-sm shadow">
+          唐
+        </div>
+        <div>
+          <h1 class="text-sm font-bold leading-tight">唐崎ジュニア 大会進行</h1>
+          <p class="text-[10px] text-slate-400" id="header-stats">全 0 試合</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-1.5">
+        <!-- 表示モード切り替え（メイン: 表 / サブ: カード） -->
+        <div class="bg-slate-800 p-0.5 rounded-lg border border-slate-700 flex text-xs">
+          <button id="view-mode-table" class="px-2.5 py-1 rounded-md text-yellow-400 bg-slate-700 font-bold flex items-center gap-1 transition">
+            <i class="fa-solid fa-table-cells"></i> 全体表
+          </button>
+          <button id="view-mode-card" class="px-2.5 py-1 rounded-md text-slate-400 font-medium flex items-center gap-1 transition">
+            <i class="fa-solid fa-list-check"></i> カード
+          </button>
+        </div>
+
+        <!-- ダークモード切り替え -->
+        <button id="theme-toggle-btn" class="p-1.5 text-slate-300 hover:text-white rounded-lg focus:outline-none" aria-label="テーマ切替">
+          <i class="fa-solid fa-moon text-base"></i>
+        </button>
+        <!-- リセットボタン -->
+        <button id="reset-btn" class="p-1.5 text-slate-300 hover:text-red-400 rounded-lg focus:outline-none" title="コール状態を初期化">
+          <i class="fa-solid fa-rotate-right text-base"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 次の唐崎ジュニアの試合 (固定表示バナー) -->
+    <div id="next-karasaki-banner" class="bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 px-3 py-1.5 flex items-center justify-between text-xs font-bold shadow-inner">
+      <div class="flex items-center gap-2 overflow-hidden">
+        <span class="bg-slate-900 text-yellow-400 px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap shadow-sm">NEXT 唐崎</span>
+        <span id="next-karasaki-info" class="truncate text-[11px]">読み込み中...</span>
+      </div>
+      <button onclick="scrollToNextKarasaki()" class="bg-slate-900/20 hover:bg-slate-900/40 text-slate-900 px-2 py-0.5 rounded text-[11px] whitespace-nowrap flex items-center gap-1 font-semibold">
+        ジャンプ <i class="fa-solid fa-arrow-down text-[10px]"></i>
+      </button>
+    </div>
+
+    <!-- 検索 ＆ フィルターバー -->
+    <div class="px-3 py-2 bg-slate-800 flex flex-col gap-2">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+        <input 
+          type="text" 
+          id="search-input"
+          placeholder="選手名・チーム・コート(A)・試合No(1)で検索..." 
+          class="w-full pl-8 pr-8 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:border-yellow-400 transition"
+        >
+        <button id="clear-search-btn" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </button>
+      </div>
+
+      <!-- フィルタータブ -->
+      <div class="flex bg-slate-900 rounded-lg p-0.5 text-[11px] font-medium border border-slate-700">
+        <button class="filter-btn active flex-1 py-1 text-center rounded-md bg-yellow-400 text-slate-950 font-bold" data-filter="all">
+          すべて <span id="count-all">(0)</span>
+        </button>
+        <button class="filter-btn flex-1 py-1 text-center rounded-md text-slate-400" data-filter="karasaki">
+          唐崎Jr <span id="count-karasaki">(0)</span>
+        </button>
+        <button class="filter-btn flex-1 py-1 text-center rounded-md text-slate-400" data-filter="uncalled">
+          未コール <span id="count-uncalled">(0)</span>
+        </button>
+        <button class="filter-btn flex-1 py-1 text-center rounded-md text-slate-400" data-filter="called">
+          コール済 <span id="count-called">(0)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 操作ガイド -->
+  <div class="px-3 pt-2 max-w-4xl mx-auto">
+    <div class="text-center text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-slate-800/60 py-1 px-2 rounded flex items-center justify-center gap-1.5">
+      <i class="fa-regular fa-hand-pointer text-xs"></i>
+      <span>長押し(0.6秒)で指定試合まで一括コール完了｜マスをタップで詳細判定</span>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <main class="p-2 sm:p-4 max-w-5xl mx-auto">
+
+    <!-- 【メイン機能】全試合進行表（テーブルマトリックス表示） -->
+    <div id="container-table-view" class="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800">
+      <table class="w-full text-left border-collapse min-w-[600px]" id="matrix-table">
+        <thead id="matrix-thead" class="bg-slate-900 text-white text-xs font-bold sticky top-0 z-10">
+          <!-- JSで動的生成 (コート一覧) -->
+        </thead>
+        <tbody id="matrix-tbody" class="divide-y divide-slate-200 dark:divide-slate-700 text-xs">
+          <!-- JSで動的生成 (試合一覧) -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 【サブ機能】1試合＝1カード（リスト表示） -->
+    <div id="container-card-view" class="hidden space-y-3 max-w-lg mx-auto">
+      <div id="match-list" class="space-y-3">
+        <!-- JSで動的生成 -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 試合詳細ポップアップダイアログ -->
+  <div id="match-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-200 dark:border-slate-700 transform scale-95 transition-transform duration-200" id="modal-content">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <span id="modal-court-no" class="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-extrabold text-xs px-2.5 py-1 rounded-md">A-1</span>
+          <span id="modal-time" class="text-xs text-slate-500 dark:text-slate-400 font-semibold ml-2">09:00</span>
+        </div>
+        <button id="modal-close-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="modal-category" class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">
+        種目名
+      </div>
+
+      <!-- 対戦カード -->
+      <div class="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 mb-4">
+        <div class="grid grid-cols-11 items-center text-center">
+          <div class="col-span-5">
+            <p id="modal-team1" class="text-[11px] text-slate-500 truncate"></p>
+            <p id="modal-player1" class="text-sm font-extrabold text-slate-900 dark:text-white truncate"></p>
+          </div>
+          <div class="col-span-1 font-black text-xs text-slate-400">VS</div>
+          <div class="col-span-5">
+            <p id="modal-team2" class="text-[11px] text-slate-500 truncate"></p>
+            <p id="modal-player2" class="text-sm font-extrabold text-slate-900 dark:text-white truncate"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- アクションボタン -->
+      <div class="space-y-2">
+        <button id="modal-toggle-call-btn" class="w-full py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm bg-yellow-400 text-slate-950 hover:bg-yellow-300">
+          <i class="fa-solid fa-check"></i> <span>この試合をコール済みにする</span>
+        </button>
+
+        <button id="modal-batch-call-btn" class="w-full py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-forward-fast"></i> この試合まで一括コール済み
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snackbar (Undo操作用) -->
+  <div id="snackbar" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-circle-check text-green-400 dark:text-green-600 text-base"></i>
+      <span id="snackbar-text" class="text-xs font-medium">変更を適用しました</span>
+    </div>
+    <button id="undo-btn" class="bg-yellow-400 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">
+      元に戻す
+    </button>
+  </div>
+
+  <script>
+    // --- 組み込み試合データ (スプレッドシートデータ構造) ---
+    const RAW_MATCH_DATA = [
+      { id: 1, court: "A", matchNo: "1", time: "09:00", category: "男子シングルス1部", player1: "山田 太郎", team1: "唐崎ジュニア", player2: "佐藤 健", team2: "大津クラブ" },
+      { id: 2, court: "B", matchNo: "1", time: "09:00", category: "女子シングルス1部", player1: "鈴木 花子", team1: "草津Jr", player2: "高橋 麗", team2: "栗東Jr" },
+      { id: 3, court: "C", matchNo: "1", time: "09:00", category: "男子シングルス2部", player1: "中村 蓮", team1: "高島Jr", player2: "加藤 翔", team2: "唐崎ジュニア" },
+      
+      { id: 4, court: "A", matchNo: "2", time: "09:20", category: "男子シングルス1部", player1: "田中 昇", team1: "石山スポーツ", player2: "伊藤 翼", team2: "唐崎ジュニア" },
+      { id: 5, court: "B", matchNo: "2", time: "09:20", category: "女子シングルス2部", player1: "渡辺 萌", team1: "唐崎ジュニア", player2: "小林 葵", team2: "長浜キッズ" },
+      { id: 6, court: "C", matchNo: "2", time: "09:20", category: "男子シングルス2部", player1: "小川 陸", team1: "守山クラブ", player2: "岡田 陸", team2: "彦根クラブ" },
+
+      { id: 7, court: "A", matchNo: "3", time: "09:40", category: "男子ダブルス1部", player1: "山田 / 鈴木", team1: "唐崎ジュニア", player2: "中村 / 加藤", team2: "守山クラブ" },
+      { id: 8, court: "B", matchNo: "3", time: "09:40", category: "女子ダブルス1部", player1: "吉田 / 山口", team1: "滋賀Jr", player2: "斉藤 / 松本", team2: "彦根クラブ" },
+      { id: 9, court: "C", matchNo: "3", time: "09:40", category: "女子ダブルス2部", player1: "前田 / 藤田", team1: "唐崎ジュニア", player2: "後藤 / 長谷川", team2: "甲賀Jr" },
+
+      { id: 10, court: "A", matchNo: "4", time: "10:00", category: "男子シングルス2部", player1: "井上 拓海", team1: "唐崎ジュニア", player2: "木村 勇気", team2: "高島Jr" },
+      { id: 11, court: "B", matchNo: "4", time: "10:00", category: "女子シングルス2部", player1: "林 さくら", team1: "甲賀Jr", player2: "清水 凛", team2: "唐崎ジュニア" },
+      { id: 12, court: "C", matchNo: "4", time: "10:00", category: "男子シングルス1部", player1: "村上 龍", team1: "大津クラブ", player2: "近藤 健太", team2: "草津Jr" },
+
+      { id: 13, court: "A", matchNo: "5", time: "10:20", category: "男子シングルス準決勝", player1: "山田 太郎", team1: "唐崎ジュニア", player2: "田中 昇", team2: "石山スポーツ" },
+      { id: 14, court: "B", matchNo: "5", time: "10:20", category: "女子シングルス準決勝", player1: "鈴木 花子", team1: "草津Jr", player2: "渡辺 萌", team2: "唐崎ジュニア" },
+      { id: 15, court: "C", matchNo: "5", time: "10:20", category: "男子シングルス準決勝", player1: "加藤 翔", team1: "唐崎ジュニア", player2: "小川 陸", team2: "守山クラブ" },
+
+      { id: 16, court: "A", matchNo: "6", time: "10:50", category: "男子シングルス決勝", player1: "勝者(A5)", team1: "-", player2: "伊藤 翼", team2: "唐崎ジュニア" },
+      { id: 17, court: "B", matchNo: "6", time: "10:50", category: "女子シングルス決勝", player1: "清水 凛", team1: "唐崎ジュニア", player2: "勝者(B5)", team2: "-" },
+      { id: 18, court: "C", matchNo: "6", time: "10:50", category: "男子ダブルス決勝", player1: "山田 / 鈴木", team1: "唐崎ジュニア", player2: "前田 / 藤田", team2: "唐崎ジュニア" }
+    ];
+
+    const STORAGE_KEY = 'karasaki_app_called_ids_v2';
+    const THEME_KEY = 'karasaki_app_theme_v2';
+
+    // アプリ状態
+    let matches = [];
+    let courts = [];
+    let matchNumbers = [];
+    let calledSet = new Set();
+    let historyStack = [];
+    let currentFilter = 'all';
+    let currentSearchQuery = '';
+    let currentViewMode = 'table'; // 'table' or 'card'
+    let longPressTimer = null;
+    let snackbarTimer = null;
+    let selectedMatchId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      loadStorageData();
+      matches = parseMatchesData(RAW_MATCH_DATA);
+      extractStructureData();
+      renderApp();
+      setupEventListeners();
+    });
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+        updateThemeIcon(true);
+      } else {
+        document.documentElement.classList.remove('dark');
+        updateThemeIcon(false);
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+      updateThemeIcon(isDark);
+    }
+
+    function updateThemeIcon(isDark) {
+      const btn = document.getElementById('theme-toggle-btn');
+      btn.innerHTML = isDark 
+        ? '<i class="fa-solid fa-sun text-yellow-400 text-base"></i>' 
+        : '<i class="fa-solid fa-moon text-slate-300 text-base"></i>';
+    }
+
+    function loadStorageData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          calledSet = new Set(JSON.parse(saved));
+        }
+      } catch (e) {
+        calledSet = new Set();
+      }
+    }
+
+    function saveStorageData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(calledSet)));
+      } catch (e) {
+        console.error("Storage save failed", e);
+      }
+    }
+
+    function parseMatchesData(dataList) {
+      return dataList.map((m, index) => {
+        const isTeam1Karasaki = isKarasaki(m.team1) || isKarasaki(m.player1);
+        const isTeam2Karasaki = isKarasaki(m.team2) || isKarasaki(m.player2);
+        const isKarasakiMatch = isTeam1Karasaki || isTeam2Karasaki;
+
+        return {
+          ...m,
+          orderIndex: index,
+          isKarasakiMatch,
+          isTeam1Karasaki,
+          isTeam2Karasaki
+        };
+      });
+    }
+
+    function isKarasaki(text) {
+      if (!text) return false;
+      return text.includes('唐崎') || text.includes('からさき') || text.includes('Karasaki');
+    }
+
+    // コート一覧と試合番号一覧の構造生成
+    function extractStructureData() {
+      const courtSet = new Set();
+      const noSet = new Set();
+
+      matches.forEach(m => {
+        courtSet.add(m.court);
+        noSet.add(m.matchNo);
+      });
+
+      courts = Array.from(courtSet).sort();
+      matchNumbers = Array.from(noSet).sort((a, b) => parseInt(a) - parseInt(b));
+    }
+
+    function renderApp() {
+      if (currentViewMode === 'table') {
+        renderTableView();
+      } else {
+        renderCardView();
+      }
+      updateCountsAndHeader();
+      updateNextKarasakiBanner();
+    }
+
+    // 【メイン表示】タイムテーブルマトリックスレンダリング
+    function renderTableView() {
+      const thead = document.getElementById('matrix-thead');
+      const tbody = document.getElementById('matrix-tbody');
+
+      // ヘッダー（コート）
+      let headerHTML = `<tr>
+        <th class="p-2 border border-slate-700 bg-slate-950 text-center w-14">試合</th>`;
+      courts.forEach(court => {
+        headerHTML += `<th class="p-2 border border-slate-700 bg-slate-900 text-center min-w-[150px] sm:min-w-[180px]">
+          ${court}コート
+        </th>`;
+      });
+      headerHTML += `</tr>`;
+      thead.innerHTML = headerHTML;
+
+      // 行（試合番号）
+      let bodyHTML = '';
+      matchNumbers.forEach(no => {
+        bodyHTML += `<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">`;
+        bodyHTML += `<td class="p-2 border border-slate-200 dark:border-slate-700 font-extrabold text-center bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs">
+          第${no}試合
+        </td>`;
+
+        courts.forEach(court => {
+          const match = matches.find(m => m.court === court && m.matchNo === no);
+          
+          if (!match) {
+            bodyHTML += `<td class="p-2 border border-slate-200 dark:border-slate-700 text-center text-slate-300 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-900/20">-</td>`;
+            return;
+          }
+
+          // フィルター一致確認
+          const isCalled = calledSet.has(match.id);
+          const isFilteredOut = checkFilterAndSearch(match);
+
+          if (isFilteredOut) {
+            bodyHTML += `<td class="p-2 border border-slate-200 dark:border-slate-700 text-center opacity-20 bg-slate-100 dark:bg-slate-900 text-slate-400">
+              非表示
+            </td>`;
+            return;
+          }
+
+          // セルの装飾
+          let cellStyle = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700";
+          let karasakiBadge = "";
+
+          if (match.isKarasakiMatch && !isCalled) {
+            cellStyle = "bg-amber-100 dark:bg-amber-950/80 border-amber-400 dark:border-amber-600 font-medium shadow-inner";
+            karasakiBadge = `<span class="bg-yellow-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full inline-block ml-1">唐崎</span>`;
+          }
+
+          if (isCalled) {
+            cellStyle = "bg-slate-200/70 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 line-through";
+          }
+
+          bodyHTML += `
+            <td class="match-cell relative p-2 border ${cellStyle} cursor-pointer transition active:scale-[0.98]" 
+                data-id="${match.id}" 
+                data-order="${match.orderIndex}">
+              ${isCalled ? `<div class="absolute top-1 right-1 text-[9px] font-bold text-slate-500 bg-slate-300 dark:bg-slate-700 px-1 rounded no-underline">済</div>` : ''}
+              
+              <div class="text-[10px] text-slate-400 dark:text-slate-500 flex justify-between items-center mb-0.5">
+                <span>${match.time}</span>
+                <span>${karasakiBadge}</span>
+              </div>
+              
+              <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate mb-1">${match.category}</div>
+              
+              <div class="space-y-0.5">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="${match.isTeam1Karasaki ? 'font-black text-amber-700 dark:text-yellow-300' : 'font-bold text-slate-800 dark:text-slate-200'} truncate">
+                    ${match.player1}
+                  </span>
+                  <span class="text-[9px] text-slate-400 scale-90">${match.team1}</span>
+                </div>
+                <div class="text-[9px] text-center font-black text-slate-300 dark:text-slate-600 my-[-2px]">VS</div>
+                <div class="flex justify-between items-center text-xs">
+                  <span class="${match.isTeam2Karasaki ? 'font-black text-amber-700 dark:text-yellow-300' : 'font-bold text-slate-800 dark:text-slate-200'} truncate">
+                    ${match.player2}
+                  </span>
+                  <span class="text-[9px] text-slate-400 scale-90">${match.team2}</span>
+                </div>
+              </div>
+            </td>
+          `;
+        });
+        bodyHTML += `</tr>`;
+      });
+
+      tbody.innerHTML = bodyHTML;
+      setupCellEvents();
+    }
+
+    // 【サブ表示】カード型リストレンダリング
+    function renderCardView() {
+      const listContainer = document.getElementById('match-list');
+      
+      const filtered = matches.filter(m => !checkFilterAndSearch(m));
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="py-12 text-center text-slate-400">
+            <i class="fa-solid fa-inbox text-3xl mb-2 opacity-50"></i>
+            <p class="text-xs font-medium">該当する試合はありません</p>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(m => {
+        const isCalled = calledSet.has(m.id);
+        let cardBg = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm";
+        let karasakiBadge = "";
+
+        if (m.isKarasakiMatch && !isCalled) {
+          cardBg = "bg-amber-50/90 dark:bg-amber-950/40 border-2 border-yellow-400 dark:border-yellow-600 shadow-md";
+          karasakiBadge = `<span class="bg-yellow-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-star text-[9px]"></i> 唐崎Jr
+                           </span>`;
+        }
+
+        if (isCalled) {
+          cardBg = "bg-slate-200/60 dark:bg-slate-800/40 border-slate-300/60 dark:border-slate-800 opacity-60";
+        }
+
+        return `
+          <div class="match-card relative rounded-xl p-3.5 border ${cardBg} cursor-pointer" data-id="${m.id}" data-order="${m.orderIndex}">
+            ${isCalled ? `<div class="absolute right-3 top-3 bg-slate-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">コール済み</div>` : ''}
+            
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/80 dark:border-slate-700">
+              <div class="flex items-center gap-2">
+                <span class="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-extrabold text-xs px-2 py-0.5 rounded">
+                  ${m.court}コート 第${m.matchNo}試合
+                </span>
+                <span class="text-xs text-slate-500 font-semibold"><i class="fa-regular fa-clock"></i> ${m.time}</span>
+              </div>
+              <div>${karasakiBadge}</div>
+            </div>
+
+            <div class="text-xs font-bold text-slate-500 mb-2 truncate">${m.category}</div>
+
+            <div class="grid grid-cols-11 gap-1 items-center bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg text-center">
+              <div class="col-span-5 truncate">
+                <div class="text-[10px] text-slate-400">${m.team1}</div>
+                <div class="text-sm ${m.isTeam1Karasaki ? 'font-black text-amber-600 dark:text-yellow-300' : 'font-bold'}">${m.player1}</div>
+              </div>
+              <div class="col-span-1 font-black text-xs text-slate-400">VS</div>
+              <div class="col-span-5 truncate">
+                <div class="text-[10px] text-slate-400">${m.team2}</div>
+                <div class="text-sm ${m.isTeam2Karasaki ? 'font-black text-amber-600 dark:text-yellow-300' : 'font-bold'}">${m.player2}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      setupCardEvents();
+    }
+
+    // フィルタリング判定関数
+    function checkFilterAndSearch(m) {
+      const isCalled = calledSet.has(m.id);
+
+      if (currentFilter === 'karasaki' && !m.isKarasakiMatch) return true;
+      if (currentFilter === 'uncalled' && isCalled) return true;
+      if (currentFilter === 'called' && !isCalled) return true;
+
+      if (currentSearchQuery) {
+        const q = currentSearchQuery.toLowerCase();
+        const p1 = (m.player1 || '').toLowerCase();
+        const t1 = (m.team1 || '').toLowerCase();
+        const p2 = (m.player2 || '').toLowerCase();
+        const t2 = (m.team2 || '').toLowerCase();
+        const court = (m.court || '').toLowerCase();
+        const no = (m.matchNo || '').toString().toLowerCase();
+        const cat = (m.category || '').toLowerCase();
+
+        const hit = p1.includes(q) || t1.includes(q) || p2.includes(q) || t2.includes(q) ||
+                    court.includes(q) || no.includes(q) || `${court}${no}`.includes(q) || cat.includes(q);
+        if (!hit) return true;
+      }
+
+      return false;
+    }
+
+    // カウント表示・ヘッダー更新
+    function updateCountsAndHeader() {
+      const total = matches.length;
+      const karasakiCount = matches.filter(m => m.isKarasakiMatch).length;
+      const calledCount = calledSet.size;
+      const uncalledCount = total - calledCount;
+
+      document.getElementById('count-all').innerText = `(${total})`;
+      document.getElementById('count-karasaki').innerText = `(${karasakiCount})`;
+      document.getElementById('count-uncalled').innerText = `(${uncalledCount})`;
+      document.getElementById('count-called').innerText = `(${calledCount})`;
+
+      document.getElementById('header-stats').innerText = `全 ${total} 試合 | コール済: ${calledCount}`;
+    }
+
+    // 「次の唐崎ジュニア戦」固定バナー更新
+    function updateNextKarasakiBanner() {
+      const banner = document.getElementById('next-karasaki-banner');
+      const infoText = document.getElementById('next-karasaki-info');
+
+      const nextMatch = matches.find(m => m.isKarasakiMatch && !calledSet.has(m.id));
+
+      if (nextMatch) {
+        banner.classList.remove('hidden');
+        infoText.innerHTML = `<span class="underline font-black">${nextMatch.court}第${nextMatch.matchNo}試合</span> (${nextMatch.time}) : ${nextMatch.player1} vs ${nextMatch.player2}`;
+        banner.dataset.targetId = nextMatch.id;
+      } else {
+        infoText.innerHTML = `すべての唐崎ジュニアの試合が終了しました！`;
+        delete banner.dataset.targetId;
+      }
+    }
+
+    // 次の唐崎戦へスクロールジャンプ
+    function scrollToNextKarasaki() {
+      const banner = document.getElementById('next-karasaki-banner');
+      const targetId = banner.dataset.targetId;
+      if (!targetId) return;
+
+      if (currentFilter !== 'all' && currentFilter !== 'karasaki' && currentFilter !== 'uncalled') {
+        setFilter('all');
+      }
+
+      setTimeout(() => {
+        let elem = null;
+        if (currentViewMode === 'table') {
+          elem = document.querySelector(`.match-cell[data-id="${targetId}"]`);
+        } else {
+          elem = document.querySelector(`.match-card[data-id="${targetId}"]`);
+        }
+
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          elem.classList.add('ring-4', 'ring-yellow-400');
+          setTimeout(() => elem.classList.remove('ring-4', 'ring-yellow-400'), 1500);
+        }
+      }, 50);
+    }
+
+    // イベントリスナー関係：セルクリック・長押し
+    function setupCellEvents() {
+      document.querySelectorAll('.match-cell').forEach(cell => {
+        const id = parseInt(cell.dataset.id, 10);
+        const order = parseInt(cell.dataset.order, 10);
+
+        const startPress = () => {
+          cell.classList.add('holding');
+          longPressTimer = setTimeout(() => {
+            executeBatchCall(order, id);
+            clearPress();
+          }, 600);
+        };
+
+        const clearPress = () => {
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+          cell.classList.remove('holding');
+        };
+
+        cell.addEventListener('touchstart', startPress, { passive: true });
+        cell.addEventListener('touchend', clearPress);
+        cell.addEventListener('touchmove', clearPress);
+        cell.addEventListener('mousedown', startPress);
+        cell.addEventListener('mouseup', clearPress);
+        cell.addEventListener('mouseleave', clearPress);
+
+        // 短いタップでモーダル表示
+        cell.addEventListener('click', (e) => {
+          openMatchModal(id);
+        });
+      });
+    }
+
+    function setupCardEvents() {
+      document.querySelectorAll('.match-card').forEach(card => {
+        const id = parseInt(card.dataset.id, 10);
+        const order = parseInt(card.dataset.order, 10);
+
+        const startPress = () => {
+          card.classList.add('holding');
+          longPressTimer = setTimeout(() => {
+            executeBatchCall(order, id);
+            clearPress();
+          }, 600);
+        };
+
+        const clearPress = () => {
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+          card.classList.remove('holding');
+        };
+
+        card.addEventListener('touchstart', startPress, { passive: true });
+        card.addEventListener('touchend', clearPress);
+        card.addEventListener('touchmove', clearPress);
+        card.addEventListener('mousedown', startPress);
+        card.addEventListener('mouseup', clearPress);
+        card.addEventListener('mouseleave', clearPress);
+
+        card.addEventListener('click', () => {
+          openMatchModal(id);
+        });
+      });
+    }
+
+    // ポップアップダイアログ表示
+    function openMatchModal(id) {
+      const m = matches.find(item => item.id === id);
+      if (!m) return;
+
+      selectedMatchId = id;
+
+      document.getElementById('modal-court-no').innerText = `${m.court}コート 第${m.matchNo}試合`;
+      document.getElementById('modal-time').innerText = m.time;
+      document.getElementById('modal-category').innerText = m.category;
+      document.getElementById('modal-team1').innerText = m.team1;
+      document.getElementById('modal-player1').innerText = m.player1;
+      document.getElementById('modal-team2').innerText = m.team2;
+      document.getElementById('modal-player2').innerText = m.player2;
+
+      const isCalled = calledSet.has(id);
+      const toggleBtn = document.getElementById('modal-toggle-call-btn');
+
+      if (isCalled) {
+        toggleBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i> <span>未コールに戻す</span>`;
+        toggleBtn.className = "w-full py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-300";
+      } else {
+        toggleBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>この試合をコール済みにする</span>`;
+        toggleBtn.className = "w-full py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm bg-yellow-400 text-slate-950 hover:bg-yellow-300";
+      }
+
+      const modal = document.getElementById('match-modal');
+      const modalContent = document.getElementById('modal-content');
+
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalContent.classList.remove('scale-95');
+      modalContent.classList.add('scale-100');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('match-modal');
+      const modalContent = document.getElementById('modal-content');
+
+      modalContent.classList.remove('scale-100');
+      modalContent.classList.add('scale-95');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      selectedMatchId = null;
+    }
+
+    // 単一コールのトグル
+    function toggleSingleCall(id) {
+      historyStack.push(new Set(calledSet));
+
+      if (calledSet.has(id)) {
+        calledSet.delete(id);
+        showSnackbar('未コールに戻しました');
+      } else {
+        calledSet.add(id);
+        showSnackbar('コール済みにしました');
+      }
+
+      saveStorageData();
+      renderApp();
+      closeModal();
+    }
+
+    // 一括コール実行
+    function executeBatchCall(targetOrderIndex, targetId) {
+      historyStack.push(new Set(calledSet));
+
+      let count = 0;
+      matches.forEach(m => {
+        if (m.orderIndex <= targetOrderIndex) {
+          if (!calledSet.has(m.id)) {
+            calledSet.add(m.id);
+            count++;
+          }
+        }
+      });
+
+      saveStorageData();
+      renderApp();
+
+      if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+
+      const targetMatch = matches.find(m => m.id === targetId);
+      const msg = targetMatch 
+        ? `${targetMatch.court}第${targetMatch.matchNo}試合まで（計${count}件）をコール済みにしました`
+        : `指定試合まで一括コールしました`;
+      
+      showSnackbar(msg);
+      closeModal();
+    }
+
+    // Undo（復元）
+    function undoLastAction() {
+      if (historyStack.length === 0) return;
+      calledSet = historyStack.pop();
+      saveStorageData();
+      renderApp();
+      hideSnackbar();
+    }
+
+    function showSnackbar(text) {
+      const snackbar = document.getElementById('snackbar');
+      document.getElementById('snackbar-text').innerText = text;
+      snackbar.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+
+      if (snackbarTimer) clearTimeout(snackbarTimer);
+      snackbarTimer = setTimeout(hideSnackbar, 5000);
+    }
+
+    function hideSnackbar() {
+      const snackbar = document.getElementById('snackbar');
+      snackbar.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+    }
+
+    function setFilter(filterType) {
+      currentFilter = filterType;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filterType) {
+          btn.className = "filter-btn active flex-1 py-1 text-center rounded-md bg-yellow-400 text-slate-950 font-bold";
+        } else {
+          btn.className = "filter-btn flex-1 py-1 text-center rounded-md text-slate-400";
+        }
+      });
+      renderApp();
+    }
+
+    // イベント設定
+    function setupEventListeners() {
+      // モード切り替えボタン
+      const btnTable = document.getElementById('view-mode-table');
+      const btnCard = document.getElementById('view-mode-card');
+      const tableContainer = document.getElementById('container-table-view');
+      const cardContainer = document.getElementById('container-card-view');
+
+      btnTable.addEventListener('click', () => {
+        currentViewMode = 'table';
+        btnTable.className = "px-2.5 py-1 rounded-md text-yellow-400 bg-slate-700 font-bold flex items-center gap-1 transition";
+        btnCard.className = "px-2.5 py-1 rounded-md text-slate-400 font-medium flex items-center gap-1 transition";
+        tableContainer.classList.remove('hidden');
+        cardContainer.classList.add('hidden');
+        renderApp();
+      });
+
+      btnCard.addEventListener('click', () => {
+        currentViewMode = 'card';
+        btnCard.className = "px-2.5 py-1 rounded-md text-yellow-400 bg-slate-700 font-bold flex items-center gap-1 transition";
+        btnTable.className = "px-2.5 py-1 rounded-md text-slate-400 font-medium flex items-center gap-1 transition";
+        cardContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+        renderApp();
+      });
+
+      // フィルター
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+      });
+
+      // 検索
+      const searchInput = document.getElementById('search-input');
+      const clearSearchBtn = document.getElementById('clear-search-btn');
+
+      searchInput.addEventListener('input', (e) => {
+        currentSearchQuery = e.target.value.trim();
+        clearSearchBtn.classList.toggle('hidden', currentSearchQuery.length === 0);
+        renderApp();
+      });
+
+      clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        currentSearchQuery = '';
+        clearSearchBtn.classList.add('hidden');
+        renderApp();
+      });
+
+      // モーダルイベント
+      document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+      document.getElementById('modal-toggle-call-btn').addEventListener('click', () => {
+        if (selectedMatchId) toggleSingleCall(selectedMatchId);
+      });
+      document.getElementById('modal-batch-call-btn').addEventListener('click', () => {
+        if (selectedMatchId) {
+          const m = matches.find(item => item.id === selectedMatchId);
+          if (m) executeBatchCall(m.orderIndex, m.id);
+        }
+      });
+
+      // Undo ＆ Reset
+      document.getElementById('undo-btn').addEventListener('click', undoLastAction);
+      document.getElementById('reset-btn').addEventListener('click', () => {
+        if (confirm('すべての試合のコール状態を初期化しますか？')) {
+          historyStack.push(new Set(calledSet));
+          calledSet.clear();
+          saveStorageData();
+          renderApp();
+          showSnackbar('すべてのコール状態をリセットしました');
+        }
+      });
+
+      document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+    }
+  </script>
+</body>
+</html>
