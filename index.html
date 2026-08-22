@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>唐崎ジュニア コール管理 | ヤマザキパン杯 滋賀県予選</title>
+<meta name="theme-color" content="#0E2A3D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF1F1;
+    --card:#FFFFFF;
+    --ink:#10202B;
+    --ink-soft:#5B6B72;
+    --line:#DCE3E4;
+    --navy:#0E2A3D;
+    --navy-deep:#081821;
+    --court:#1F7A5C;
+    --court-soft:#E5F4EE;
+    --amber:#F0A020;
+    --amber-deep:#C97A0E;
+    --amber-tint:#FFF4E1;
+    --danger:#C24141;
+    --called-tint:#F2F2F0;
+    --radius-lg:18px;
+    --radius-md:12px;
+    --radius-sm:8px;
+    --shadow:0 2px 10px rgba(14,42,61,0.08);
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior-y:none;
+    padding-bottom:calc(84px + var(--safe-bottom));
+  }
+  .num{font-family:"Oswald","Noto Sans JP",sans-serif;font-weight:600;letter-spacing:0.02em;}
+  button{font-family:inherit;}
+  a{color:inherit;}
+
+  /* ---------- ヘッダー ---------- */
+  .app-header{
+    position:sticky;top:0;z-index:40;
+    background:var(--navy);
+    color:#fff;
+    padding:calc(10px + var(--safe-top)) 16px 10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.18);
+  }
+  .app-header__row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .app-header__title{font-size:13px;font-weight:500;line-height:1.4;opacity:0.92;letter-spacing:0.01em;}
+  .app-header__title b{color:var(--amber);font-weight:700;}
+  .icon-btn{
+    flex:none;background:rgba(255,255,255,0.12);border:none;color:#fff;
+    width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:16px;cursor:pointer;
+  }
+  .icon-btn:active{background:rgba(255,255,255,0.24);}
+
+  /* ---------- NEXT バナー ---------- */
+  .next-banner{
+    margin:12px 16px 0;
+    background:linear-gradient(135deg,var(--amber-deep),var(--amber) 70%);
+    border-radius:var(--radius-lg);
+    padding:14px 16px 16px;
+    color:#1A1103;
+    box-shadow:0 6px 18px rgba(201,122,14,0.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .next-banner::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 100% 0%,rgba(255,255,255,0.35),transparent 55%);
+    pointer-events:none;
+  }
+  .next-banner__eyebrow{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;letter-spacing:0.14em;
+    text-transform:uppercase;opacity:0.85;margin-bottom:6px;
+  }
+  .next-banner__eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#1A1103;animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.25;}}
+  .next-banner__main{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .next-banner__match{font-size:30px;line-height:1;font-weight:700;}
+  .next-banner__sub{display:flex;gap:14px;margin-top:4px;font-size:13px;font-weight:600;}
+  .next-banner__vs{margin-top:10px;font-size:16px;font-weight:700;line-height:1.5;}
+  .next-banner__vs .org{font-size:12px;font-weight:500;opacity:0.75;display:block;}
+  .next-banner__empty{font-size:14px;font-weight:500;padding:4px 0 2px;}
+  .next-banner.is-empty{background:linear-gradient(135deg,#245C46,var(--court) 70%);color:#EFFBF4;box-shadow:0 6px 18px rgba(31,122,92,0.3);}
+  .next-banner.is-empty::after{display:none;}
+
+  /* ---------- フィルター / 検索 ---------- */
+  .toolbar{
+    position:sticky;top:calc(52px + var(--safe-top));z-index:35;
+    background:var(--bg);
+    padding:10px 16px 8px;
+  }
+  .filter-row{display:flex;gap:6px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;padding-bottom:2px;}
+  .filter-row::-webkit-scrollbar{display:none;}
+  .filter-chip{
+    flex:none;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink-soft);
+    font-size:13px;font-weight:700;
+    padding:7px 14px;border-radius:999px;
+    white-space:nowrap;
+  }
+  .filter-chip.is-active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .filter-chip.filter-chip--karasaki{color:var(--amber-deep);border-color:rgba(201,122,14,0.4);background:var(--amber-tint);}
+  .filter-chip.filter-chip--karasaki.is-active{background:var(--amber-deep);border-color:var(--amber-deep);color:#fff;}
+  .search-wrap{margin-top:8px;position:relative;}
+  .search-input{
+    width:100%;border:1px solid var(--line);background:var(--card);
+    border-radius:var(--radius-md);padding:10px 12px 10px 34px;
+    font-size:14px;color:var(--ink);
+  }
+  .search-input:focus{outline:2px solid var(--amber-deep);outline-offset:1px;}
+  .search-wrap::before{
+    content:"🔍";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;opacity:0.6;
+  }
+
+  /* ---------- 一覧 ---------- */
+  .list{padding:4px 16px 24px;}
+  .time-group{margin-top:18px;}
+  .time-group__label{
+    display:flex;align-items:baseline;gap:8px;
+    font-size:12px;font-weight:700;color:var(--ink-soft);
+    padding:0 2px 8px;letter-spacing:0.03em;
+  }
+  .time-group__label .num{font-size:17px;color:var(--navy);}
+  .time-group__label .count{font-weight:500;color:var(--ink-soft);}
+
+  .match-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:12px 13px;
+    margin-bottom:9px;
+    box-shadow:var(--shadow);
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+    touch-action:manipulation;
+    position:relative;
+    transition:transform .12s ease;
+  }
+  .match-card.is-pressing{transform:scale(0.97);}
+  .match-card.is-karasaki{border-color:var(--amber-deep);box-shadow:0 3px 12px rgba(201,122,14,0.22);}
+  .match-card.is-karasaki::before{
+    content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;
+    background:var(--amber-deep);border-radius:0 3px 3px 0;
+  }
+  .match-card.is-called{
+    background:var(--called-tint);
+  }
+  .match-card.is-called .team-name,.match-card.is-called .team-org{color:#9AA3A6;}
+  .match-card.is-called .match-no{color:#8B959A;}
+  .match-card.is-called::before{background:#B9B2A0;}
+  .match-card.is-called .court-badge{background:#D8DEDF;color:#8B959A;}
+
+  .card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .match-no{font-size:18px;color:var(--navy);}
+  .court-badge{
+    font-size:12px;font-weight:700;background:var(--court-soft);color:var(--court);
+    padding:2px 8px;border-radius:999px;
+  }
+  .card-time{margin-left:auto;font-size:13px;color:var(--ink-soft);font-weight:600;}
+  .called-flag{font-size:11px;font-weight:700;color:#8B959A;border:1px solid #D8DEDF;padding:1px 7px;border-radius:999px;}
+
+  .teams{display:flex;flex-direction:column;gap:4px;}
+  .team{display:flex;align-items:baseline;gap:6px;padding:2px 0;}
+  .team-name{font-size:15px;font-weight:700;color:var(--ink);}
+  .team-org{font-size:12px;color:var(--ink-soft);}
+  .team.is-tbd .team-name{font-weight:500;color:#9AA3A6;font-style:italic;}
+  .team.is-tbd .team-org{color:#B7BEC0;}
+  .team.is-empty .team-name{color:#B7BEC0;}
+  .team.is-karasaki .team-name{color:var(--amber-deep);}
+  .karasaki-chip{
+    display:inline-flex;align-items:center;gap:3px;
+    background:var(--amber-tint);color:var(--amber-deep);
+    font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;
+    border:1px solid rgba(201,122,14,0.35);
+  }
+  .vs-divider{font-size:10px;font-weight:700;color:#B7BEC0;padding-left:1px;letter-spacing:0.1em;}
+
+  .empty-state{text-align:center;color:var(--ink-soft);font-size:14px;padding:40px 20px;}
+
+  /* ---------- 長押し確認シート ---------- */
+  .sheet-overlay{
+    position:fixed;inset:0;background:rgba(8,24,33,0.5);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:80;opacity:0;pointer-events:none;transition:opacity .15s ease;
+  }
+  .sheet-overlay.is-open{opacity:1;pointer-events:auto;}
+  .sheet{
+    width:100%;max-width:480px;background:#fff;
+    border-radius:20px 20px 0 0;
+    padding:20px 20px calc(20px + var(--safe-bottom));
+    transform:translateY(100%);transition:transform .2s ease;
+  }
+  .sheet-overlay.is-open .sheet{transform:translateY(0);}
+  .sheet__handle{width:38px;height:4px;background:var(--line);border-radius:999px;margin:0 auto 14px;}
+  .sheet__title{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px;}
+  .sheet__desc{text-align:center;font-size:13px;color:var(--ink-soft);margin-bottom:16px;}
+  .sheet__match{
+    background:var(--bg);border-radius:var(--radius-md);padding:12px 14px;
+    display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;
+  }
+  .sheet__match .num{font-size:20px;color:var(--navy);}
+  .sheet-btns{display:flex;gap:10px;}
+  .sheet-btns button{
+    flex:1;padding:13px 10px;border-radius:var(--radius-md);border:none;
+    font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .btn-cancel{background:var(--bg);color:var(--ink-soft);}
+  .btn-confirm{background:var(--navy);color:#fff;}
+
+  /* ---------- 詳細モーダル ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(8,24,33,0.5);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    z-index:80;opacity:0;pointer-events:none;transition:opacity .15s ease;
+  }
+  .modal-overlay.is-open{opacity:1;pointer-events:auto;}
+  .modal{
+    width:100%;max-width:400px;background:#fff;border-radius:var(--radius-lg);
+    padding:20px;transform:scale(0.96);transition:transform .15s ease;
+  }
+  .modal-overlay.is-open .modal{transform:scale(1);}
+  .modal__close{position:absolute;}
+  .modal-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .modal-head .num{font-size:22px;color:var(--navy);}
+  .modal-teams .team-block{padding:10px 0;border-bottom:1px dashed var(--line);}
+  .modal-teams .team-block:last-child{border-bottom:none;}
+  .modal-teams .team-name{display:block;font-size:16px;font-weight:700;}
+  .modal-teams .team-org{display:block;font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .modal-status{margin-top:14px;font-size:13px;color:var(--ink-soft);}
+  .modal-actions{margin-top:16px;}
+  .modal-actions button{
+    width:100%;padding:12px;border-radius:var(--radius-md);border:1px solid var(--line);
+    background:var(--bg);font-size:14px;font-weight:700;color:var(--ink);
+  }
+
+  /* ---------- リセット確認 ---------- */
+  .confirm-overlay{
+    position:fixed;inset:0;background:rgba(8,24,33,0.5);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    z-index:90;opacity:0;pointer-events:none;transition:opacity .15s ease;
+  }
+  .confirm-overlay.is-open{opacity:1;pointer-events:auto;}
+  .confirm-box{background:#fff;border-radius:var(--radius-lg);padding:22px 20px;max-width:320px;width:100%;text-align:center;}
+  .confirm-box p{font-size:14px;color:var(--ink);margin:0 0 18px;line-height:1.6;}
+  .confirm-box .sheet-btns button{font-size:14px;}
+  .btn-danger{background:var(--danger);color:#fff;}
+
+  /* ---------- Snackbar ---------- */
+  .snackbar{
+    position:fixed;left:16px;right:16px;bottom:calc(16px + var(--safe-bottom));
+    background:var(--navy-deep);color:#fff;
+    border-radius:var(--radius-md);
+    padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.3);
+    z-index:70;
+    transform:translateY(120%);transition:transform .2s ease;
+    font-size:13px;
+  }
+  .snackbar.is-open{transform:translateY(0);}
+  .snackbar button{background:none;border:none;color:var(--amber);font-weight:700;font-size:13px;padding:4px 6px;}
+
+  .footer-note{text-align:center;font-size:11px;color:var(--ink-soft);padding:18px 20px 4px;opacity:0.7;}
+
+  @media (min-width:520px){
+    .app-header,.toolbar,.list{padding-left:calc((100% - 488px)/2 + 16px);padding-right:calc((100% - 488px)/2 + 16px);}
+    .next-banner{margin-left:calc((100% - 488px)/2 + 16px);margin-right:calc((100% - 488px)/2 + 16px);}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header__row">
+    <div class="app-header__title">ヤマザキパン杯第35回 ダブルス滋賀県予選<br><b>唐崎ジュニア</b> コール管理</div>
+    <button class="icon-btn" id="resetBtn" aria-label="コール状態をリセット">↺</button>
+  </div>
+</header>
+
+<div id="nextBanner" class="next-banner is-empty">
+  <div class="next-banner__eyebrow"><span class="dot"></span>NEXT 唐崎ジュニア</div>
+  <div class="next-banner__empty">読み込み中…</div>
+</div>
+
+<div class="toolbar">
+  <div class="filter-row" id="filterRow">
+    <button class="filter-chip is-active" data-filter="all">すべて</button>
+    <button class="filter-chip filter-chip--karasaki" data-filter="karasaki">唐崎ジュニア</button>
+    <button class="filter-chip" data-filter="uncalled">未コール</button>
+    <button class="filter-chip" data-filter="called">コール済み</button>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="searchInput" type="search" inputmode="search"
+      placeholder="選手名・所属・試合番号・コートで検索" autocomplete="off">
+  </div>
+</div>
+
+<main class="list" id="listRoot"></main>
+
+<p class="footer-note">長押し（約0.7秒）でその試合まで一括コール／タップで詳細表示</p>
+
+<!-- 長押し確認シート -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet__handle"></div>
+    <div class="sheet__title">ここまでコール済みにしますか？</div>
+    <div class="sheet__desc">この試合より前（上の時間帯・同じ時間帯の左のコート）もまとめてコール済みになります</div>
+    <div class="sheet__match" id="sheetMatchInfo"></div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="sheetCancel">キャンセル</button>
+      <button class="btn-confirm" id="sheetConfirm">ここまでコール済み</button>
+    </div>
+  </div>
+</div>
+
+<!-- 試合詳細モーダル -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="num" id="modalMatchNo"></span>
+      <span class="court-badge" id="modalCourt"></span>
+      <span class="card-time" id="modalTime"></span>
+    </div>
+    <div class="modal-teams" id="modalTeams"></div>
+    <div class="modal-status" id="modalStatus"></div>
+    <div class="modal-actions">
+      <button id="modalCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- リセット確認 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>すべてのコール済み状態を<br>リセットしますか？</p>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="confirmCancel">キャンセル</button>
+      <button class="btn-danger" id="confirmOk">リセット</button>
+    </div>
+  </div>
+</div>
+
+<!-- Snackbar -->
+<div class="snackbar" id="snackbar">
+  <span id="snackbarMsg"></span>
+  <button id="snackbarUndo">元に戻す</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DATA = {"tournament": {"title": "ヤマザキパン杯第35回 全国小学生バドミントン選手権大会 ダブルス滋賀県予選", "date": "令和8年8月30日", "targetOrg": "唐崎"}, "matches": [{"id": "6G-1", "matchNo": "6G-1", "time": "09:30", "court": 1, "row": 3, "team1": {"kind": "real", "name": "飯田・南", "org": "仰木の里"}, "team2": {"kind": "real", "name": "中本・徳田", "org": "ベィシック"}, "karasaki": false}, {"id": "6G-2", "matchNo": "6G-2", "time": "09:30", "court": 2, "row": 3, "team1": {"kind": "real", "name": "巳波・猪阪", "org": "エミー"}, "team2": {"kind": "real", "name": "伊藤・田中", "org": "里きっず"}, "karasaki": false}, {"id": "6G-3", "matchNo": "6G-3", "time": "09:30", "court": 3, "row": 3, "team1": {"kind": "real", "name": "奥野・河村", "org": "北里"}, "team2": {"kind": "real", "name": "鈎・河合", "org": "まろんず"}, "karasaki": false}, {"id": "6G-4", "matchNo": "6G-4", "time": "09:30", "court": 4, "row": 3, "team1": {"kind": "real", "name": "釆野・市橋", "org": "のとがわ"}, "team2": {"kind": "real", "name": "森岡・奥村", "org": "ＦＡＮＡＴＩＣ"}, "karasaki": false}, {"id": "6G-5", "matchNo": "6G-5", "time": "09:30", "court": 5, "row": 3, "team1": {"kind": "real", "name": "溝口・城尾", "org": "仰木の里"}, "team2": {"kind": "real", "name": "田口・西村", "org": "エミー"}, "karasaki": false}, {"id": "6G-6", "matchNo": "6G-6", "time": "09:30", "court": 6, "row": 3, "team1": {"kind": "real", "name": "渡辺・吉村", "org": "のとがわ"}, "team2": {"kind": "real", "name": "臼井・大田", "org": "北里"}, "karasaki": false}, {"id": "6G-7", "matchNo": "6G-7", "time": "09:30", "court": 7, "row": 3, "team1": {"kind": "real", "name": "毛利・長谷川", "org": "ぐるぐるパンチ"}, "team2": {"kind": "real", "name": "平岡・新垣", "org": "のとがわ"}, "karasaki": false}, {"id": "6G-8", "matchNo": "6G-8", "time": "09:30", "court": 8, "row": 3, "team1": {"kind": "real", "name": "内川・佃", "org": "ミナクサ会"}, "team2": {"kind": "real", "name": "上坂・野々垣", "org": "唐崎"}, "karasaki": true}, {"id": "5G-1", "matchNo": "5G-1", "time": "09:30", "court": 9, "row": 3, "team1": {"kind": "real", "name": "梅田・小西", "org": "里きっず"}, "team2": {"kind": "real", "name": "飯田・片岡", "org": "ベィシック"}, "karasaki": false}, {"id": "5G-2", "matchNo": "5G-2", "time": "09:30", "court": 10, "row": 3, "team1": {"kind": "real", "name": "岡本・八田", "org": "仰木の里"}, "team2": {"kind": "real", "name": "加藤・井口", "org": "のとがわ"}, "karasaki": false}, {"id": "5G-3", "matchNo": "5G-3", "time": "09:55", "court": 1, "row": 9, "team1": {"kind": "real", "name": "森元・上田", "org": "エミー"}, "team2": {"kind": "real", "name": "山岡・三河", "org": "里きっず"}, "karasaki": false}, {"id": "5G-4", "matchNo": "5G-4", "time": "09:55", "court": 2, "row": 9, "team1": {"kind": "real", "name": "米澤・三嶋", "org": "北里"}, "team2": {"kind": "real", "name": "田部・片岡", "org": "ベィシック"}, "karasaki": false}, {"id": "4G-1", "matchNo": "4G-1", "time": "09:55", "court": 3, "row": 9, "team1": {"kind": "real", "name": "西田・西田", "org": "ベィシック"}, "team2": {"kind": "real", "name": "木村・奥村", "org": "ＦＡＮＡＴＩＣ"}, "karasaki": false}, {"id": "4G-2", "matchNo": "4G-2", "time": "09:55", "court": 4, "row": 9, "team1": {"kind": "real", "name": "河村・徳永", "org": "のとがわ"}, "team2": {"kind": "real", "name": "山下・山本", "org": "瀬田北"}, "karasaki": false}, {"id": "5B-1", "matchNo": "5B-1", "time": "09:55", "court": 5, "row": 9, "team1": {"kind": "real", "name": "小菅・小菅", "org": "ベィシック"}, "team2": {"kind": "real", "name": "山﨑・西田", "org": "ベィシック"}, "karasaki": false}, {"id": "6G-9", "matchNo": "6G-9", "time": "10:20", "court": 1, "row": 15, "team1": null, "team2": null, "karasaki": false}, {"id": "6G-10", "matchNo": "6G-10", "time": "10:20", "court": 2, "row": 15, "team1": null, "team2": null, "karasaki": false}, {"id": "6G-11", "matchNo": "6G-11", "time": "10:20", "court": 3, "row": 15, "team1": null, "team2": null, "karasaki": false}, {"id": "6G-12", "matchNo": "6G-12", "time": "10:20", "court": 4, "row": 15, "team1": null, "team2": null, "karasaki": false}, {"id": "5G-5", "matchNo": "5G-5", "time": "10:20", "court": 5, "row": 15, "team1": {"kind": "real", "name": "福田・櫻井", "org": "瀬田北"}, "team2": null, "karasaki": false}, {"id": "5G-6", "matchNo": "5G-6", "time": "10:20", "court": 6, "row": 15, "team1": null, "team2": {"kind": "real", "name": "鷹取・植田", "org": "エミー"}, "karasaki": false}, {"id": "5G-7", "matchNo": "5G-7", "time": "10:20", "court": 7, "row": 15, "team1": {"kind": "real", "name": "寄田・竹村", "org": "まろんず"}, "team2": null, "karasaki": false}, {"id": "5G-8", "matchNo": "5G-8", "time": "10:20", "court": 8, "row": 15, "team1": null, "team2": {"kind": "real", "name": "川西・春本", "org": "唐崎"}, "karasaki": true}, {"id": "4G-3", "matchNo": "4G-3", "time": "10:20", "court": 9, "row": 15, "team1": {"kind": "real", "name": "脇阪・山﨑", "org": "ＦＡＮＡＴＩＣ"}, "team2": null, "karasaki": false}, {"id": "4G-4", "matchNo": "4G-4", "time": "10:20", "court": 10, "row": 15, "team1": {"kind": "real", "name": "中嶋・坂本", "org": "仰木の里"}, "team2": null, "karasaki": false}, {"id": "4G-5", "matchNo": "4G-5", "time": "10:45", "court": 1, "row": 21, "team1": {"kind": "real", "name": "田中・植田", "org": "ＦＡＮＡＴＩＣ"}, "team2": {"kind": "real", "name": "城尾・二井家", "org": "仰木の里"}, "karasaki": false}, {"id": "4G-6", "matchNo": "4G-6", "time": "10:45", "court": 2, "row": 21, "team1": null, "team2": {"kind": "real", "name": "大谷・高阪", "org": "唐崎"}, "karasaki": true}, {"id": "6B-1", "matchNo": "6B-1", "time": "10:45", "court": 3, "row": 21, "team1": {"kind": "real", "name": "佐々木・広瀬", "org": "ベィシック"}, "team2": {"kind": "real", "name": "小柳・田邊", "org": "ＦＡＮＡＴＩＣ"}, "karasaki": false}, {"id": "6B-2", "matchNo": "6B-2", "time": "10:45", "court": 4, "row": 21, "team1": {"kind": "real", "name": "間木・米澤", "org": "北里"}, "team2": {"kind": "real", "name": "岡田・竹端", "org": "仰木の里"}, "karasaki": false}, {"id": "5B-2", "matchNo": "5B-2", "time": "10:45", "court": 5, "row": 21, "team1": {"kind": "real", "name": "田中・川﨑", "org": "ＦＡＮＡＴＩＣ"}, "team2": null, "karasaki": false}, {"id": "5B-3", "matchNo": "5B-3", "time": "10:45", "court": 6, "row": 21, "team1": {"kind": "real", "name": "大澤・西村", "org": "ミナクサ会"}, "team2": {"kind": "real", "name": "安原・田邊", "org": "ＦＡＮＡＴＩＣ"}, "karasaki": false}, {"id": "5B-4", "matchNo": "5B-4", "time": "10:45", "court": 7, "row": 21, "team1": {"kind": "real", "name": "渡邉・深田", "org": "瀬田北"}, "team2": {"kind": "real", "name": "笠原・大田", "org": "北里"}, "karasaki": false}, {"id": "5B-5", "matchNo": "5B-5", "time": "10:45", "court": 8, "row": 21, "team1": {"kind": "real", "name": "真下・有本", "org": "瀬田北"}, "team2": {"kind": "real", "name": "小林・辻", "org": "唐崎"}, "karasaki": true}, {"id": "4B-1", "matchNo": "4B-1", "time": "10:45", "court": 9, "row": 21, "team1": {"kind": "real", "name": "林・佐野", "org": "ＦＡＮＡＴＩＣ"}, "team2": {"kind": "real", "name": "保田・橋本", "org": "仰木の里"}, "karasaki": false}, {"id": "4B-2", "matchNo": "4B-2", "time": "10:45", "court": 10, "row": 21, "team1": {"kind": "real", "name": "篠澤・谷口", "org": "瀬田北"}, "team2": {"kind": "real", "name": "王・安井", "org": "ベィシック"}, "karasaki": false}, {"id": "6Z-1", "matchNo": "6Z-1", "time": "11:10", "court": 1, "row": 27, "team1": {"kind": "tbd", "label": "6G:1L"}, "team2": {"kind": "tbd", "label": "6G:2L"}, "karasaki": false}, {"id": "6Z-2", "matchNo": "6Z-2", "time": "11:10", "court": 2, "row": 27, "team1": {"kind": "tbd", "label": "6G:11L"}, "team2": {"kind": "tbd", "label": "6G:3L"}, "karasaki": false}, {"id": "6Z-3", "matchNo": "6Z-3", "time": "11:10", "court": 3, "row": 27, "team1": {"kind": "tbd", "label": "6G:4L"}, "team2": {"kind": "tbd", "label": "6G:12L"}, "karasaki": false}, {"id": "6Z-4", "matchNo": "6Z-4", "time": "11:10", "court": 4, "row": 27, "team1": {"kind": "tbd", "label": "6G:9L"}, "team2": {"kind": "tbd", "label": "6G:5L"}, "karasaki": false}, {"id": "6Z-5", "matchNo": "6Z-5", "time": "11:10", "court": 5, "row": 27, "team1": {"kind": "tbd", "label": "6G:6L"}, "team2": {"kind": "tbd", "label": "6G:10L"}, "karasaki": false}, {"id": "6Z-6", "matchNo": "6Z-6", "time": "11:10", "court": 6, "row": 27, "team1": {"kind": "tbd", "label": "6G:7L"}, "team2": {"kind": "tbd", "label": "6G:8L"}, "karasaki": false}, {"id": "5Z-1", "matchNo": "5Z-1", "time": "11:10", "court": 7, "row": 27, "team1": {"kind": "tbd", "label": "5B:1L"}, "team2": {"kind": "tbd", "label": "5G:6L"}, "karasaki": false}, {"id": "5Z-2", "matchNo": "5Z-2", "time": "11:10", "court": 8, "row": 27, "team1": {"kind": "tbd", "label": "5G:5L"}, "team2": {"kind": "tbd", "label": "5G:3L"}, "karasaki": false}, {"id": "5Z-3", "matchNo": "5Z-3", "time": "11:10", "court": 9, "row": 27, "team1": {"kind": "tbd", "label": "5G:4L"}, "team2": {"kind": "tbd", "label": "5B:3L"}, "karasaki": false}, {"id": "5Z-4", "matchNo": "5Z-4", "time": "11:10", "court": 10, "row": 27, "team1": {"kind": "tbd", "label": "5G:1L"}, "team2": {"kind": "tbd", "label": "5G:8L"}, "karasaki": false}, {"id": "5Z-5", "matchNo": "5Z-5", "time": "11:35", "court": 1, "row": 33, "team1": {"kind": "tbd", "label": "5G:7L"}, "team2": {"kind": "tbd", "label": "5G:2L"}, "karasaki": false}, {"id": "6G-13", "matchNo": "6G-13", "time": "11:35", "court": 2, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "6G-14", "matchNo": "6G-14", "time": "11:35", "court": 3, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "5G-9", "matchNo": "5G-9", "time": "11:35", "court": 4, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "5G-10", "matchNo": "5G-10", "time": "11:35", "court": 5, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "4G-7", "matchNo": "4G-7", "time": "11:35", "court": 6, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "4G-8", "matchNo": "4G-8", "time": "11:35", "court": 7, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "6B-3", "matchNo": "6B-3", "time": "11:35", "court": 8, "row": 33, "team1": null, "team2": {"kind": "real", "name": "堀・木村", "org": "仰木の里"}, "karasaki": false}, {"id": "6B-4", "matchNo": "6B-4", "time": "11:35", "court": 9, "row": 33, "team1": null, "team2": {"kind": "real", "name": "中嶋・藤本", "org": "仰木の里"}, "karasaki": false}, {"id": "5B-6", "matchNo": "5B-6", "time": "11:35", "court": 10, "row": 33, "team1": null, "team2": null, "karasaki": false}, {"id": "5B-7", "matchNo": "5B-7", "time": "12:00", "court": 1, "row": 39, "team1": null, "team2": null, "karasaki": false}, {"id": "4B-3", "matchNo": "4B-3", "time": "12:00", "court": 2, "row": 39, "team1": {"kind": "real", "name": "上坂・西岡", "org": "唐崎"}, "team2": null, "karasaki": true}, {"id": "4B-4", "matchNo": "4B-4", "time": "12:00", "court": 3, "row": 39, "team1": null, "team2": {"kind": "real", "name": "廣瀬・丸岡", "org": "ＦＡＮＡＴＩＣ"}, "karasaki": false}, {"id": "6Z-7", "matchNo": "6Z-7", "time": "12:00", "court": 4, "row": 39, "team1": {"kind": "tbd", "label": "6B:1L"}, "team2": null, "karasaki": false}, {"id": "6Z-8", "matchNo": "6Z-8", "time": "12:00", "court": 5, "row": 39, "team1": null, "team2": null, "karasaki": false}, {"id": "6Z-9", "matchNo": "6Z-9", "time": "12:00", "court": 6, "row": 39, "team1": null, "team2": null, "karasaki": false}, {"id": "6Z-10", "matchNo": "6Z-10", "time": "12:00", "court": 7, "row": 39, "team1": null, "team2": {"kind": "tbd", "label": "6B:2L"}, "karasaki": false}, {"id": "5Z-6", "matchNo": "5Z-6", "time": "12:00", "court": 8, "row": 39, "team1": {"kind": "tbd", "label": "5B:2L"}, "team2": null, "karasaki": false}, {"id": "5Z-7", "matchNo": "5Z-7", "time": "12:00", "court": 9, "row": 39, "team1": null, "team2": null, "karasaki": false}, {"id": "5Z-8", "matchNo": "5Z-8", "time": "12:00", "court": 10, "row": 39, "team1": {"kind": "tbd", "label": "5B:4L"}, "team2": null, "karasaki": false}, {"id": "5Z-9", "matchNo": "5Z-9", "time": "12:25", "court": 1, "row": 45, "team1": null, "team2": {"kind": "tbd", "label": "5B:5L"}, "karasaki": false}, {"id": "4Z-1", "matchNo": "4Z-1", "time": "12:25", "court": 2, "row": 45, "team1": {"kind": "tbd", "label": "4B:1L"}, "team2": {"kind": "tbd", "label": "4G:2L"}, "karasaki": false}, {"id": "4Z-2", "matchNo": "4Z-2", "time": "12:25", "court": 3, "row": 45, "team1": {"kind": "tbd", "label": "4G:5L"}, "team2": {"kind": "tbd", "label": "4G:6L"}, "karasaki": false}, {"id": "4Z-3", "matchNo": "4Z-3", "time": "12:25", "court": 4, "row": 45, "team1": {"kind": "tbd", "label": "4G:3L"}, "team2": {"kind": "tbd", "label": "4G:4L"}, "karasaki": false}, {"id": "4Z-4", "matchNo": "4Z-4", "time": "12:25", "court": 5, "row": 45, "team1": {"kind": "tbd", "label": "4G:1L"}, "team2": {"kind": "tbd", "label": "4B:2L"}, "karasaki": false}, {"id": "6ZX-1", "matchNo": "6ZX-1", "time": "12:25", "court": 6, "row": 45, "team1": {"kind": "tbd", "label": "6Z:4L"}, "team2": {"kind": "tbd", "label": "6Z:5L"}, "karasaki": false}, {"id": "6ZX-2", "matchNo": "6ZX-2", "time": "12:25", "court": 7, "row": 45, "team1": {"kind": "tbd", "label": "6Z:2L"}, "team2": {"kind": "tbd", "label": "6Z:3L"}, "karasaki": false}, {"id": "5ZX-1", "matchNo": "5ZX-1", "time": "12:25", "court": 8, "row": 45, "team1": {"kind": "tbd", "label": "5Z:3L"}, "team2": {"kind": "tbd", "label": "5Z:4L"}, "karasaki": false}, {"id": "6ZX-3", "matchNo": "6ZX-3", "time": "13:15", "court": 1, "row": 57, "team1": {"kind": "tbd", "label": "6Z:7L"}, "team2": null, "karasaki": false}, {"id": "6ZX-4", "matchNo": "6ZX-4", "time": "13:15", "court": 2, "row": 57, "team1": {"kind": "tbd", "label": "6Z:6L"}, "team2": {"kind": "tbd", "label": "6Z:8L"}, "karasaki": false}, {"id": "6ZX-5", "matchNo": "6ZX-5", "time": "13:15", "court": 3, "row": 57, "team1": {"kind": "tbd", "label": "6Z:9L"}, "team2": {"kind": "tbd", "label": "6Z:1L"}, "karasaki": false}, {"id": "6ZX-6", "matchNo": "6ZX-6", "time": "13:15", "court": 4, "row": 57, "team1": null, "team2": {"kind": "tbd", "label": "6Z:10L"}, "karasaki": false}, {"id": "5ZX-2", "matchNo": "5ZX-2", "time": "13:15", "court": 5, "row": 57, "team1": {"kind": "tbd", "label": "5Z:6L"}, "team2": null, "karasaki": false}, {"id": "5ZX-3", "matchNo": "5ZX-3", "time": "13:15", "court": 6, "row": 57, "team1": {"kind": "tbd", "label": "5Z:5L"}, "team2": {"kind": "tbd", "label": "5Z:7L"}, "karasaki": false}, {"id": "5ZX-4", "matchNo": "5ZX-4", "time": "13:15", "court": 7, "row": 57, "team1": {"kind": "tbd", "label": "5Z:8L"}, "team2": {"kind": "tbd", "label": "5Z:1L"}, "karasaki": false}, {"id": "5ZX-5", "matchNo": "5ZX-5", "time": "13:15", "court": 8, "row": 57, "team1": {"kind": "tbd", "label": "5Z:2L"}, "team2": {"kind": "tbd", "label": "5Z:9L"}, "karasaki": false}, {"id": "6Z-11", "matchNo": "6Z-11", "time": "13:15", "court": 9, "row": 57, "team1": null, "team2": null, "karasaki": false}, {"id": "6Z-12", "matchNo": "6Z-12", "time": "13:15", "court": 10, "row": 57, "team1": null, "team2": null, "karasaki": false}, {"id": "5Z-10", "matchNo": "5Z-10", "time": "13:40", "court": 1, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "5Z-11", "matchNo": "5Z-11", "time": "13:40", "court": 2, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "4Z-5", "matchNo": "4Z-5", "time": "13:40", "court": 3, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "4Z-6", "matchNo": "4Z-6", "time": "13:40", "court": 4, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "6G-決勝", "matchNo": "6G-決勝", "time": "13:40", "court": 5, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "6G-三決", "matchNo": "6G-三決", "time": "13:40", "court": 6, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "5G-決勝", "matchNo": "5G-決勝", "time": "13:40", "court": 7, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "5G-三決", "matchNo": "5G-三決", "time": "13:40", "court": 8, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "4G-決勝", "matchNo": "4G-決勝", "time": "13:40", "court": 9, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "4G-三決", "matchNo": "4G-三決", "time": "13:40", "court": 10, "row": 63, "team1": null, "team2": null, "karasaki": false}, {"id": "6B-決勝", "matchNo": "6B-決勝", "time": "14:05", "court": 1, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "6B-三決", "matchNo": "6B-三決", "time": "14:05", "court": 2, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "5B-決勝", "matchNo": "5B-決勝", "time": "14:05", "court": 3, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "5B-三決", "matchNo": "5B-三決", "time": "14:05", "court": 4, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "4B-決勝", "matchNo": "4B-決勝", "time": "14:05", "court": 5, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "4B-三決", "matchNo": "4B-三決", "time": "14:05", "court": 6, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "6ZX-7", "matchNo": "6ZX-7", "time": "14:05", "court": 7, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "6ZX-8", "matchNo": "6ZX-8", "time": "14:05", "court": 8, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "5ZX-6", "matchNo": "5ZX-6", "time": "14:05", "court": 9, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "5ZX-7", "matchNo": "5ZX-7", "time": "14:05", "court": 10, "row": 69, "team1": null, "team2": null, "karasaki": false}, {"id": "4ZX-1", "matchNo": "4ZX-1", "time": "14:30", "court": 1, "row": 75, "team1": {"kind": "tbd", "label": "4Z:1L"}, "team2": {"kind": "tbd", "label": "4Z:2L"}, "karasaki": false}, {"id": "4ZX-2", "matchNo": "4ZX-2", "time": "14:30", "court": 2, "row": 75, "team1": {"kind": "tbd", "label": "4Z:3L"}, "team2": {"kind": "tbd", "label": "4Z:4L"}, "karasaki": false}, {"id": "6Z-決勝", "matchNo": "6Z-決勝", "time": "14:30", "court": 3, "row": 75, "team1": null, "team2": null, "karasaki": false}, {"id": "6Z-三決", "matchNo": "6Z-三決", "time": "14:30", "court": 4, "row": 75, "team1": null, "team2": null, "karasaki": false}, {"id": "5Z-決勝", "matchNo": "5Z-決勝", "time": "14:30", "court": 5, "row": 75, "team1": null, "team2": null, "karasaki": false}, {"id": "5Z-三決", "matchNo": "5Z-三決", "time": "14:30", "court": 6, "row": 75, "team1": null, "team2": null, "karasaki": false}, {"id": "4Z-決勝", "matchNo": "4Z-決勝", "time": "14:30", "court": 7, "row": 75, "team1": null, "team2": null, "karasaki": false}, {"id": "4Z-三決", "matchNo": "4Z-三決", "time": "14:30", "court": 8, "row": 75, "team1": null, "team2": null, "karasaki": false}, {"id": "6BX2-三決", "matchNo": "6BX2-三決", "time": "14:30", "court": 9, "row": 75, "team1": {"kind": "tbd", "label": "6B:5L"}, "team2": {"kind": "tbd", "label": "6B:6W"}, "karasaki": false}, {"id": "5BX2-三決", "matchNo": "5BX2-三決", "time": "14:30", "court": 10, "row": 75, "team1": {"kind": "tbd", "label": "5B:8L"}, "team2": {"kind": "tbd", "label": "5B:9W"}, "karasaki": false}, {"id": "4BX2-三決", "matchNo": "4BX2-三決", "time": "14:55", "court": 1, "row": 81, "team1": {"kind": "tbd", "label": "4B:5L"}, "team2": {"kind": "tbd", "label": "4B:6W"}, "karasaki": false}, {"id": "6GX2-三決", "matchNo": "6GX2-三決", "time": "14:55", "court": 2, "row": 81, "team1": {"kind": "tbd", "label": "6G:15L"}, "team2": {"kind": "tbd", "label": "6G:16W"}, "karasaki": false}, {"id": "5GX2-三決", "matchNo": "5GX2-三決", "time": "14:55", "court": 3, "row": 81, "team1": {"kind": "tbd", "label": "5G:11L"}, "team2": {"kind": "tbd", "label": "5G:12W"}, "karasaki": false}, {"id": "4GX2-三決", "matchNo": "4GX2-三決", "time": "14:55", "court": 4, "row": 81, "team1": {"kind": "tbd", "label": "4G:9L"}, "team2": {"kind": "tbd", "label": "4G:10W"}, "karasaki": false}, {"id": "6ZX-決勝", "matchNo": "6ZX-決勝", "time": "14:55", "court": 5, "row": 81, "team1": null, "team2": null, "karasaki": false}, {"id": "5ZX-決勝", "matchNo": "5ZX-決勝", "time": "14:55", "court": 6, "row": 81, "team1": null, "team2": null, "karasaki": false}, {"id": "4ZX-決勝", "matchNo": "4ZX-決勝", "time": "14:55", "court": 7, "row": 81, "team1": null, "team2": null, "karasaki": false}]}
+;
+  var MATCHES = DATA.matches;
+  var TARGET_ORG = DATA.tournament.targetOrg;
+  var STORAGE_KEY = "karasaki-tt:called:v1";
+
+  var byId = {};
+  MATCHES.forEach(function(m){ byId[m.id] = m; });
+
+  // ---------- 状態管理 ----------
+  var called = loadCalled();
+  var lastAction = null; // { addedIds: [...] }
+  var currentFilter = "all";
+  var searchQuery = "";
+  var longPressTimer = null;
+  var pressStartPoint = null;
+  var pressedCard = null;
+  var suppressNextClick = false;
+
+  function loadCalled(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return new Set();
+      var arr = JSON.parse(raw);
+      return new Set(Array.isArray(arr) ? arr : []);
+    }catch(e){ return new Set(); }
+  }
+  function saveCalled(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(called)));
+    }catch(e){ /* localStorage不可でもアプリは動作継続 */ }
+  }
+
+  // ---------- 「これより前（上段・左）」判定 ----------
+  // 元スプレッドシート上の row（時間帯の行）と court（列位置=コート番号）を
+  // 基準に、対象試合を含めそれ以前（読み順で前）をすべて対象にする。
+  function isUpToTarget(m, target){
+    if(m.row < target.row) return true;
+    if(m.row === target.row && m.court <= target.court) return true;
+    return false;
+  }
+
+  function callUpTo(targetId){
+    var target = byId[targetId];
+    if(!target) return;
+    var before = Array.from(called);
+    var beforeSet = new Set(before);
+    var added = [];
+    MATCHES.forEach(function(m){
+      if(isUpToTarget(m, target) && !beforeSet.has(m.id)){
+        added.push(m.id);
+      }
+    });
+    added.forEach(function(id){ called.add(id); });
+    saveCalled();
+    lastAction = { addedIds: added };
+    render();
+    if(added.length > 0){
+      showSnackbar("✓ " + target.matchNo + "試合までコール済み（" + added.length + "件）");
+    }
+  }
+
+  function undoLastAction(){
+    if(!lastAction) return;
+    lastAction.addedIds.forEach(function(id){ called.delete(id); });
+    lastAction = null;
+    saveCalled();
+    hideSnackbar();
+    render();
+  }
+
+  function resetAll(){
+    called = new Set();
+    lastAction = null;
+    saveCalled();
+    hideSnackbar();
+    render();
+  }
+
+  // ---------- 描画 ----------
+  var listRoot = document.getElementById("listRoot");
+  var nextBanner = document.getElementById("nextBanner");
+  var filterRow = document.getElementById("filterRow");
+  var searchInput = document.getElementById("searchInput");
+
+  function matchSearchable(m){
+    var parts = [m.matchNo, "コート" + m.court, m.time];
+    [m.team1, m.team2].forEach(function(t){
+      if(t && t.kind === "real"){ parts.push(t.name, t.org); }
+    });
+    return parts.join(" ");
+  }
+
+  function passesFilter(m){
+    if(currentFilter === "karasaki" && !m.karasaki) return false;
+    if(currentFilter === "uncalled" && called.has(m.id)) return false;
+    if(currentFilter === "called" && !called.has(m.id)) return false;
+    if(searchQuery){
+      var hay = matchSearchable(m).toLowerCase();
+      if(hay.indexOf(searchQuery.toLowerCase()) === -1) return false;
+    }
+    return true;
+  }
+
+  function teamHtml(t){
+    if(!t){
+      return '<div class="team is-empty"><span class="team-name">未定</span></div>';
+    }
+    if(t.kind === "tbd"){
+      return '<div class="team is-tbd"><span class="team-name">未定</span>' +
+        '<span class="team-org">(' + escapeHtml(t.label) + ')</span></div>';
+    }
+    var isKarasaki = t.org === TARGET_ORG;
+    var chip = isKarasaki ? '<span class="karasaki-chip">🟢 唐崎ジュニア</span>' :
+      '<span class="team-org">(' + escapeHtml(t.org) + ')</span>';
+    return '<div class="team' + (isKarasaki ? ' is-karasaki' : '') + '">' +
+      '<span class="team-name">' + escapeHtml(t.name) + '</span>' + chip + '</div>';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+    });
+  }
+
+  function cardHtml(m){
+    var isCalled = called.has(m.id);
+    var cls = "match-card" + (m.karasaki ? " is-karasaki" : "") + (isCalled ? " is-called" : "");
+    return (
+      '<div class="' + cls + '" data-id="' + m.id + '">' +
+        '<div class="card-top">' +
+          '<span class="match-no num">' + escapeHtml(m.matchNo) + '</span>' +
+          '<span class="court-badge">' + m.court + 'コート</span>' +
+          (isCalled ? '<span class="called-flag" style="margin-left:auto">済</span><span class="card-time" style="margin-left:8px">' + m.time + '</span>'
+                    : '<span class="card-time">' + m.time + '</span>') +
+        '</div>' +
+        '<div class="teams">' +
+          teamHtml(m.team1) +
+          '<div class="vs-divider">VS</div>' +
+          teamHtml(m.team2) +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function render(){
+    renderNextBanner();
+    renderList();
+  }
+
+  function renderNextBanner(){
+    var candidates = MATCHES
+      .filter(function(m){ return m.karasaki && !called.has(m.id); })
+      .sort(function(a,b){ return a.row - b.row || a.court - b.court; });
+
+    if(candidates.length === 0){
+      nextBanner.className = "next-banner is-empty";
+      var doneCount = MATCHES.filter(function(m){ return m.karasaki; }).length;
+      nextBanner.innerHTML =
+        '<div class="next-banner__eyebrow">NEXT 唐崎ジュニア</div>' +
+        '<div class="next-banner__empty">本日の唐崎ジュニアの試合（全' + doneCount + '試合）はすべてコール済みです ✓</div>';
+      return;
+    }
+    var m = candidates[0];
+    var karasakiTeam = (m.team1 && m.team1.kind === "real" && m.team1.org === TARGET_ORG) ? m.team1 :
+                        (m.team2 && m.team2.kind === "real" && m.team2.org === TARGET_ORG) ? m.team2 : null;
+    var oppTeam = (karasakiTeam === m.team1) ? m.team2 : m.team1;
+    var oppLabel = oppTeam && oppTeam.kind === "real" ? escapeHtml(oppTeam.name) + '<span class="org"> (' + escapeHtml(oppTeam.org) + ')</span>' :
+                   oppTeam && oppTeam.kind === "tbd" ? '未定 (' + escapeHtml(oppTeam.label) + ')' : '未定';
+
+    nextBanner.className = "next-banner";
+    nextBanner.innerHTML =
+      '<div class="next-banner__eyebrow"><span class="dot"></span>NEXT 唐崎ジュニア</div>' +
+      '<div class="next-banner__main">' +
+        '<div class="next-banner__match num">' + escapeHtml(m.matchNo) + '</div>' +
+        '<div class="next-banner__sub"><span>' + m.court + 'コート</span><span>' + m.time + '</span></div>' +
+      '</div>' +
+      '<div class="next-banner__vs">' + escapeHtml(karasakiTeam.name) + '<span class="org">(' + escapeHtml(karasakiTeam.org) + ')</span>' +
+        ' VS ' + oppLabel + '</div>';
+  }
+
+  function renderList(){
+    var visible = MATCHES.filter(passesFilter);
+    if(visible.length === 0){
+      listRoot.innerHTML = '<div class="empty-state">条件に一致する試合がありません</div>';
+      return;
+    }
+    // 時間帯ごとにグループ化（元の並び順を維持）
+    var groups = [];
+    var groupMap = {};
+    visible.forEach(function(m){
+      var key = m.time;
+      if(!groupMap[key]){
+        groupMap[key] = { time: key, items: [] };
+        groups.push(groupMap[key]);
+      }
+      groupMap[key].items.push(m);
+    });
+    groups.sort(function(a,b){ return a.items[0].row - b.items[0].row; });
+
+    var html = groups.map(function(g){
+      var cards = g.items
+        .sort(function(a,b){ return a.court - b.court; })
+        .map(cardHtml).join("");
+      return (
+        '<section class="time-group">' +
+          '<div class="time-group__label"><span class="num">' + g.time + '</span>' +
+            '<span class="count">' + g.items.length + '試合</span></div>' +
+          cards +
+        '</section>'
+      );
+    }).join("");
+    listRoot.innerHTML = html;
+  }
+
+  // ---------- フィルター / 検索 ----------
+  filterRow.addEventListener("click", function(e){
+    var btn = e.target.closest(".filter-chip");
+    if(!btn) return;
+    currentFilter = btn.dataset.filter;
+    Array.prototype.forEach.call(filterRow.querySelectorAll(".filter-chip"), function(b){
+      b.classList.toggle("is-active", b === btn);
+    });
+    renderList();
+  });
+  searchInput.addEventListener("input", function(){
+    searchQuery = searchInput.value.trim();
+    renderList();
+  });
+
+  // ---------- 長押し / タップ ----------
+  var LONG_PRESS_MS = 700;
+  var MOVE_CANCEL_PX = 12;
+
+  listRoot.addEventListener("pointerdown", function(e){
+    var card = e.target.closest(".match-card");
+    if(!card) return;
+    pressedCard = card;
+    pressStartPoint = { x: e.clientX, y: e.clientY };
+    suppressNextClick = false;
+    card.classList.add("is-pressing");
+    longPressTimer = setTimeout(function(){
+      longPressTimer = null;
+      suppressNextClick = true;
+      card.classList.remove("is-pressing");
+      if(navigator.vibrate){ navigator.vibrate(15); }
+      openSheet(card.dataset.id);
+    }, LONG_PRESS_MS);
+  });
+
+  function cancelPress(){
+    if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer = null; }
+    if(pressedCard){ pressedCard.classList.remove("is-pressing"); }
+    pressedCard = null;
+    pressStartPoint = null;
+  }
+
+  listRoot.addEventListener("pointermove", function(e){
+    if(!pressStartPoint) return;
+    var dx = e.clientX - pressStartPoint.x, dy = e.clientY - pressStartPoint.y;
+    if(Math.sqrt(dx*dx + dy*dy) > MOVE_CANCEL_PX){ cancelPress(); }
+  });
+  listRoot.addEventListener("pointerup", function(e){
+    var wasLongPress = longPressTimer === null && suppressNextClick;
+    cancelPress();
+    if(wasLongPress) return;
+    var card = e.target.closest(".match-card");
+    if(card && !suppressNextClick){ openDetail(card.dataset.id); }
+  });
+  listRoot.addEventListener("pointercancel", cancelPress);
+  listRoot.addEventListener("pointerleave", function(e){
+    if(e.target.closest && e.target.closest(".match-card")) cancelPress();
+  }, true);
+  listRoot.addEventListener("contextmenu", function(e){
+    if(e.target.closest(".match-card")) e.preventDefault();
+  });
+
+  // ---------- 長押し確認シート ----------
+  var sheetOverlay = document.getElementById("sheetOverlay");
+  var sheetMatchInfo = document.getElementById("sheetMatchInfo");
+  var pendingId = null;
+
+  function openSheet(id){
+    var m = byId[id];
+    if(!m) return;
+    pendingId = id;
+    sheetMatchInfo.innerHTML = '<span class="num">' + escapeHtml(m.matchNo) + '</span>' +
+      '<span class="court-badge">' + m.court + 'コート</span>';
+    sheetOverlay.classList.add("is-open");
+  }
+  function closeSheet(){ sheetOverlay.classList.remove("is-open"); pendingId = null; }
+  document.getElementById("sheetCancel").addEventListener("click", closeSheet);
+  document.getElementById("sheetConfirm").addEventListener("click", function(){
+    if(pendingId) callUpTo(pendingId);
+    closeSheet();
+  });
+  sheetOverlay.addEventListener("click", function(e){ if(e.target === sheetOverlay) closeSheet(); });
+
+  // ---------- 詳細モーダル ----------
+  var modalOverlay = document.getElementById("modalOverlay");
+  function openDetail(id){
+    var m = byId[id];
+    if(!m) return;
+    document.getElementById("modalMatchNo").textContent = m.matchNo;
+    document.getElementById("modalCourt").textContent = m.court + "コート";
+    document.getElementById("modalTime").textContent = m.time;
+    document.getElementById("modalTeams").innerHTML =
+      teamBlockHtml(m.team1) + teamBlockHtml(m.team2);
+    document.getElementById("modalStatus").textContent =
+      called.has(id) ? "コール済みです" : "未コールです";
+    modalOverlay.classList.add("is-open");
+  }
+  function teamBlockHtml(t){
+    if(!t) return '<div class="team-block"><span class="team-name">未定</span></div>';
+    if(t.kind === "tbd") return '<div class="team-block"><span class="team-name">未定</span>' +
+      '<span class="team-org">(' + escapeHtml(t.label) + ')</span></div>';
+    var isK = t.org === TARGET_ORG;
+    return '<div class="team-block"><span class="team-name">' + escapeHtml(t.name) +
+      (isK ? ' <span class="karasaki-chip">🟢 唐崎ジュニア</span>' : '') + '</span>' +
+      '<span class="team-org">' + escapeHtml(t.org) + '</span></div>';
+  }
+  function closeModal(){ modalOverlay.classList.remove("is-open"); }
+  document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
+  modalOverlay.addEventListener("click", function(e){ if(e.target === modalOverlay) closeModal(); });
+
+  // ---------- リセット ----------
+  var confirmOverlay = document.getElementById("confirmOverlay");
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    confirmOverlay.classList.add("is-open");
+  });
+  document.getElementById("confirmCancel").addEventListener("click", function(){
+    confirmOverlay.classList.remove("is-open");
+  });
+  document.getElementById("confirmOk").addEventListener("click", function(){
+    resetAll();
+    confirmOverlay.classList.remove("is-open");
+  });
+  confirmOverlay.addEventListener("click", function(e){ if(e.target === confirmOverlay) confirmOverlay.classList.remove("is-open"); });
+
+  // ---------- Snackbar ----------
+  var snackbar = document.getElementById("snackbar");
+  var snackbarMsg = document.getElementById("snackbarMsg");
+  var snackbarTimer = null;
+  function showSnackbar(msg){
+    snackbarMsg.textContent = msg;
+    snackbar.classList.add("is-open");
+    if(snackbarTimer) clearTimeout(snackbarTimer);
+    snackbarTimer = setTimeout(hideSnackbar, 6000);
+  }
+  function hideSnackbar(){
+    snackbar.classList.remove("is-open");
+    if(snackbarTimer){ clearTimeout(snackbarTimer); snackbarTimer = null; }
+  }
+  document.getElementById("snackbarUndo").addEventListener("click", undoLastAction);
+
+  render();
+})();
+</script>
+</body>
+</html>
